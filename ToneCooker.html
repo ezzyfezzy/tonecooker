@@ -1,0 +1,1035 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ToneCooker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column — choose a colour, read the recipe, set up your paints; a bottom dock keeps the match in view while you scroll */
+:root{
+  --bg:#eceff2; --surface:#fbfcfd; --sunk:#e2e6ea; --ink:#15181d; --muted:#596170; --line:#d3d8de;
+  --accent:#0a6a86; --accent-ink:#ffffff; --good:#1f7a4a; --warn:#a46200; --bad:#b0362f;
+  --display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body:"Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --checker: #d9dde2;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111419; --surface:#1a1e25; --sunk:#232831; --ink:#eaedf1; --muted:#9aa3b0; --line:#2d333d;
+  --accent:#4fb4d2; --accent-ink:#0b1a20; --good:#4cc283; --warn:#e3a34a; --bad:#ef7a70; --checker:#2a3039; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111419; --surface:#1a1e25; --sunk:#232831; --ink:#eaedf1; --muted:#9aa3b0; --line:#2d333d;
+  --accent:#4fb4d2; --accent-ink:#0b1a20; --good:#4cc283; --warn:#e3a34a; --bad:#ef7a70; --checker:#2a3039; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px 110px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-0.01em}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:14px}
+.dots{display:flex}
+.dots span{width:26px;height:26px;border-radius:50%;mix-blend-mode:multiply;margin-left:-9px;border:0}
+.dots span:first-child{margin-left:0}
+:root[data-theme="dark"] .dots span{mix-blend-mode:screen}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .dots span{mix-blend-mode:screen}}
+h1{font-size:clamp(26px,4vw,36px);font-weight:700;line-height:1.05}
+.sub{color:var(--muted);margin:2px 0 0;max-width:60ch}
+
+.panel{scroll-margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.label{font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+
+/* tabs */
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--sunk);padding:4px;border-radius:10px}
+.tabs button{border:0;background:transparent;padding:9px 6px;border-radius:7px;cursor:pointer;font-weight:500;font-size:14px;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.tabs svg{width:16px;height:16px;flex:none}
+@media (max-width:420px){.tabs button span.t{font-size:12.5px}.tabs svg{display:none}}
+
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--line);background:var(--surface);padding:9px 14px;border-radius:9px;cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.small{padding:6px 10px;font-size:13px}
+.btn.on{border-color:var(--accent);color:var(--accent);font-weight:600}
+input[type=text],input[type=url]{border:1px solid var(--line);background:var(--bg);border-radius:9px;padding:9px 12px;min-width:0}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.msg{font-size:14px;padding:10px 12px;border-radius:9px;background:var(--sunk);margin:0}
+.msg.err{color:var(--bad)}
+
+/* manual */
+.picker{display:flex;gap:14px;align-items:stretch;flex-wrap:wrap}
+.picker .well{position:relative;width:96px;height:96px;border-radius:12px;overflow:hidden;border:1px solid var(--line);flex:none}
+.picker .well input{position:absolute;inset:-10px;width:calc(100% + 20px);height:calc(100% + 20px);border:0;padding:0;cursor:pointer}
+.picker .fields{display:flex;flex-direction:column;gap:8px;flex:1;min-width:180px}
+.hexrow{display:flex;gap:8px}
+.hexrow input{font-family:var(--mono);flex:1;text-transform:uppercase;width:100%}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{width:28px;height:28px;border-radius:7px;border:1px solid rgba(0,0,0,.12);cursor:pointer;padding:0}
+
+/* image */
+.stage{position:relative;border-radius:10px;overflow:hidden;background:
+  repeating-conic-gradient(var(--checker) 0 25%, transparent 0 50%) 0 0/16px 16px;border:1px solid var(--line);touch-action:none;user-select:none}
+.stage canvas{display:block;width:100%;height:auto;cursor:crosshair}
+.marker{position:absolute;pointer-events:none;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1.5px rgba(0,0,0,.7), inset 0 0 0 1.5px rgba(0,0,0,.5);transform:translate(-50%,-50%)}
+.marker.wb{border-style:dashed}
+.drop{border:1.5px dashed var(--line);border-radius:10px;padding:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.drop.over{border-color:var(--accent);background:var(--sunk)}
+.tools{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.range{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+.range input{width:110px}
+.badge{font-size:12px;font-weight:600;padding:3px 8px;border-radius:99px;background:var(--sunk);color:var(--muted)}
+.domi .chip{width:36px;height:36px;border-radius:8px}
+
+/* result */
+.compare{display:grid;grid-template-columns:1fr 1fr;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+.compare .sw{height:130px;position:relative;display:flex;align-items:flex-end;padding:10px 12px}
+@media (max-width:480px){.compare .sw{height:104px}}
+.ratiobox{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.ratiobox .label{margin-bottom:2px}
+.compare .cap{font-size:12px;font-family:var(--mono);padding:3px 8px;border-radius:6px;background:rgba(255,255,255,.82);color:#15181d;display:flex;gap:8px}
+.compare .cap b{font-family:var(--body);font-weight:600}
+.verdict{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pill{font-weight:600;font-size:13px;padding:4px 10px;border-radius:99px;border:1.5px solid currentColor}
+.pill.good{color:var(--good)} .pill.warn{color:var(--warn)} .pill.bad{color:var(--bad)}
+.de{font-family:var(--mono);font-size:13px;color:var(--muted)}
+
+.strip{display:flex;height:16px;border-radius:5px;overflow:hidden;border:1px solid var(--line)}
+.strip span{display:block;height:100%;min-width:3px}
+.recipe{display:flex;flex-direction:column}
+.ri{display:grid;grid-template-columns:34px minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.ri:first-child{border-top:0}
+.dab{width:34px;height:34px;border-radius:50% 46% 52% 44%;box-shadow:inset -3px -4px 6px rgba(0,0,0,.18), inset 3px 3px 5px rgba(255,255,255,.35);border:1px solid rgba(0,0,0,.1)}
+.ri .nm{font-weight:600;line-height:1.25}
+.ri .cd{font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:400}
+.ri .pc{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:15px;text-align:right}
+.ri .pt{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);text-align:right;min-width:62px}
+.ratio{font-family:var(--display);font-size:20px;font-weight:500;line-height:1.3}
+.ratio small{display:block;font-family:var(--body);font-size:13px;color:var(--muted);font-weight:400}
+ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+ol.steps li::marker{font-family:var(--mono);color:var(--muted)}
+.strong{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--warn);margin-left:6px}
+.alt{border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
+.alt .head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.miniswatch{width:22px;height:22px;border-radius:6px;border:1px solid rgba(0,0,0,.12);display:inline-block;vertical-align:middle}
+
+/* paints */
+.paints{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.paint{display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:var(--surface)}
+.paint input{accent-color:var(--accent);width:16px;height:16px;flex:none}
+.paint .dab{width:26px;height:26px;flex:none}
+.paint .nm{font-weight:500;font-size:14px;line-height:1.2}
+.paint .cd{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.paint.off .dab{opacity:.45}
+.paint.off .nm{color:var(--muted)}
+.paint.has{border-color:var(--accent);background:var(--bg)}
+.starter{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.starter .paint{flex-direction:column;align-items:flex-start;gap:8px;position:relative;padding:10px}
+.starter .paint .dab{width:40px;height:40px}
+.starter .paint input{position:absolute;top:10px;right:10px}
+@media (max-width:600px){.starter{grid-template-columns:minmax(0,1fr)}
+  .starter .paint{flex-direction:row;align-items:center;gap:10px;padding:8px 10px}
+  .starter .paint .dab{width:30px;height:30px}
+  .starter .paint input{position:static}}
+/* dock */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -8px 24px rgba(0,0,0,.10);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-top:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom, 0px));transform:translateY(115%);visibility:hidden;transition:transform .22s ease, visibility 0s linear .22s}
+.dock.show{transform:none;visibility:visible;transition:transform .22s ease}
+.dock-in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.dsw{display:flex;flex:none;border-radius:9px;overflow:hidden;border:1px solid var(--line)}
+.dsw i{width:30px;height:42px;display:block}
+.dtx{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3}
+.dtx b{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dtx span{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (prefers-reduced-motion: reduce){.dock,.dock.show{transition:none}}
+.sub-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.sub-head h3{font-size:16px}
+.groups{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.groups details{border-top:1px solid var(--line)}
+.groups details:first-child{border-top:0}
+.groups summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px}
+.groups summary::-webkit-details-marker{display:none}
+.groups summary .chev{width:14px;height:14px;transition:transform .15s;color:var(--muted)}
+.groups details[open] summary .chev{transform:rotate(90deg)}
+.groups summary .gname{font-weight:600;display:flex;gap:12px;align-items:center;flex-wrap:wrap;min-width:0}
+.groups summary .gdots{display:flex}
+.groups summary .gdots i{width:14px;height:14px;border-radius:50%;margin-left:-4px;border:1.5px solid var(--surface);display:block}
+.groups summary .gdots i:first-child{margin-left:0}
+.groups summary .count{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.groups summary .count.on{color:var(--accent);font-weight:600}
+.groups .inner{padding:0 14px 14px}
+.groups summary:hover{background:var(--bg)}
+.filebox{display:flex;flex-direction:column;gap:8px}
+.filebox textarea{font-family:var(--mono);font-size:12px;width:100%;min-height:110px;border:1px solid var(--line);border-radius:9px;background:var(--bg);padding:10px;resize:vertical}
+.search{position:relative;flex:1;max-width:280px;min-width:160px}
+.search input{width:100%}
+.sect-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.foot{font-size:13px;color:var(--muted);max-width:75ch}
+@media (prefers-reduced-motion: no-preference){.compare .sw,.strip span{transition:background-color .25s, flex-grow .25s}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="dots" aria-hidden="true"><span style="background:#fde800"></span><span style="background:#c42981"></span><span style="background:#0a7fa8"></span></div>
+      <div>
+        <h1>ToneCooker</h1>
+        <p class="sub">Pick any colour and get a recipe from the five primaries, plus any other tubes you own.</p>
+      </div>
+    </div>
+  </header>
+
+    <!-- INPUT -->
+    <section class="panel" aria-label="Choose a colour">
+      <div class="sect-head"><h2 style="font-size:20px">Choose a colour</h2><span class="hint">Type it, or pick it from a picture</span></div>
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tab-code" aria-selected="true" data-tab="code"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18"/></svg><span class="t">Colour</span></button>
+        <button role="tab" id="tab-photo" aria-selected="false" data-tab="photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg><span class="t">Photo</span></button>
+        <button role="tab" id="tab-camera" aria-selected="false" data-tab="camera"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span class="t">Camera</span></button>
+        <button role="tab" id="tab-link" aria-selected="false" data-tab="link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg><span class="t">Link</span></button>
+      </div>
+
+      <!-- manual -->
+      <div id="pane-code" role="tabpanel" aria-labelledby="tab-code">
+        <div class="picker">
+          <label class="well" title="Open colour picker"><input type="color" id="colorIn" value="#8a9a5b" aria-label="Colour picker"></label>
+          <div class="fields">
+            <label class="label" for="hexIn">Hex or RGB</label>
+            <div class="hexrow"><input type="text" id="hexIn" value="#8A9A5B" spellcheck="false" autocomplete="off" placeholder="#8A9A5B or 138,154,91"><button class="btn" id="hexGo">Match</button></div>
+            <p class="hint" id="hexHint">Type a hex code like #4A7C59 or an RGB value like 74, 124, 89.</p>
+          </div>
+        </div>
+        <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
+          <span class="label">Try one</span>
+          <div class="chips" id="examples"></div>
+        </div>
+      </div>
+
+      <!-- shared image section (photo / camera / link) -->
+      <div id="pane-src" hidden>
+        <div id="src-photo" class="drop" data-src>
+          <p class="hint" style="flex:1;min-width:180px">Drop a photo here, paste one with Ctrl+V / ⌘V, or choose a file.</p>
+          <label class="btn primary"><input type="file" id="fileIn" accept="image/*" hidden>Choose photo</label>
+        </div>
+        <div id="src-camera" class="drop" data-src hidden>
+          <p class="hint" style="flex:1;min-width:180px">On a phone this opens the camera. Shoot in daylight, close to the colour, without flash.</p>
+          <label class="btn primary"><input type="file" id="camIn" accept="image/*" capture="environment" hidden>Take photo</label>
+        </div>
+        <div id="src-link" data-src hidden style="display:flex;flex-direction:column;gap:8px">
+          <div class="hexrow"><input type="url" id="urlIn" placeholder="https://… link to an image" autocomplete="off"><button class="btn primary" id="urlGo">Load</button></div>
+          <p class="msg" id="urlMsg" hidden></p>
+          <p class="hint">Some sites don't allow their images to be opened here. If a link won't load, right-click or long-press the picture, choose <b>Copy image</b>, and paste it here.</p>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
+          <div class="tools">
+            <span class="badge" id="imgName">Sample board</span>
+            <div class="row">
+              <label class="range" for="radius">Sample size <input type="range" id="radius" min="0" max="20" value="4"></label>
+              <button class="btn small" id="wbBtn" title="Tap something white or neutral grey in the photo to correct the lighting">White balance</button>
+            </div>
+          </div>
+          <div class="stage" id="stage"><canvas id="cv" aria-label="Photo. Click or tap to pick a colour."></canvas><div class="marker" id="mk" hidden></div><div class="marker wb" id="mkwb" hidden></div></div>
+          <p class="hint" id="stageHint">Click or tap the photo to pick a colour. Drag to fine-tune.</p>
+          <div class="domi" style="display:flex;flex-direction:column;gap:6px">
+            <span class="label">Main colours in this photo</span>
+            <div class="chips" id="domi"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESULT -->
+    <section class="panel" id="recipeCard" aria-live="polite" aria-label="Recipe">
+      <div class="sect-head"><h2 style="font-size:20px">Recipe</h2><div class="verdict"><span class="pill" id="pill"></span><span class="de" id="deTxt"></span></div></div>
+      <div class="compare" id="compare">
+        <div class="sw" id="swT"><span class="cap"><b>Your colour</b><span id="hexT"></span></span></div>
+        <div class="sw" id="swM"><span class="cap"><b>Mix</b><span id="hexM"></span></span></div>
+      </div>
+      <p class="msg" id="gamutMsg" hidden></p>
+
+      <div class="ratiobox"><span class="label">Mix in this ratio</span><div class="ratio" id="ratio"></div></div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="sect-head"><h3 style="font-size:16px">Amounts</h3><span class="label">by volume</span></div>
+        <div class="strip" id="strip"></div>
+        <div class="recipe" id="recipe"></div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h3 style="font-size:16px">How to mix it</h3>
+        <ol class="steps" id="steps"></ol>
+      </div>
+
+      <div class="alt" id="alt" hidden></div>
+    </section>
+
+  <!-- PAINTS -->
+  <section class="panel" aria-label="Your paints">
+    <div class="sect-head">
+      <div>
+        <h2 style="font-size:20px">Your paints</h2>
+        <p class="hint" id="paintCount" style="margin-top:2px"></p>
+      </div>
+      <div class="row">
+        <button class="btn small" id="saveSet">Save my paints</button>
+        <label class="btn small"><input type="file" id="loadSet" accept=".json,.txt,application/json,text/plain" hidden>Load paints file</label>
+        <button class="btn small" id="resetSet">Primaries only</button>
+      </div>
+    </div>
+    <p class="msg" id="setMsg" hidden></p>
+    <div class="filebox" id="fileBox" hidden>
+      <p class="hint">Saving files isn't available in this view. Copy this text into a file named <b>my-acrylic-paints.json</b> to keep it.</p>
+      <textarea id="fileText" readonly aria-label="Paint set as text"></textarea>
+      <div class="row"><button class="btn small" id="copyText">Copy</button><button class="btn small" id="closeBox">Close</button></div>
+    </div>
+
+    <div class="sub-head">
+      <h3>Primaries</h3>
+      <span class="hint">The five you mix everything from</span>
+    </div>
+    <div class="starter" id="starter"></div>
+
+    <div class="sub-head">
+      <h3>Other tubes you own</h3>
+      <div class="row" style="flex:1;justify-content:flex-end">
+        <div class="search"><input type="text" id="paintSearch" placeholder="Find a paint, e.g. sienna or PB29" autocomplete="off" aria-label="Find a paint"></div>
+        <label class="range" for="maxP">Max per mix
+          <select id="maxP" style="border:1px solid var(--line);background:var(--bg);border-radius:7px;padding:4px 8px">
+            <option value="2">2</option><option value="3">3</option><option value="4" selected>4</option><option value="5">5</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <p class="hint">Open a colour group and tick the tubes you have. Recipes will use them when they get closer to your colour.</p>
+    <div class="groups" id="groups"></div>
+    <p class="foot">How it works: each paint is modelled by how much light it reflects across the spectrum, and mixtures are calculated with the Kubelka–Munk model that paint chemists use. Match quality is ΔE2000: under 2 is hard to tell apart, under 5 is close. Real paints differ by brand and screens differ from paper, so mix a little first, compare it dry next to your target, and adjust.</p>
+  </section>
+</div>
+
+<div class="dock" id="dock" inert>
+  <div class="dock-in">
+    <span class="dsw" aria-hidden="true"><i id="dT"></i><i id="dM"></i></span>
+    <span class="dtx"><b id="dV"></b><span id="dR"></span></span>
+    <button class="btn small primary" id="dGo">See recipe</button>
+  </div>
+</div>
+
+<script>
+// ===== Paint mixing engine: spectral Kubelka–Munk + CIEDE2000 =====
+const Engine = (() => {
+  const L0 = 400, STEP = 10, NB = 31;
+  const lam = Array.from({ length: NB }, (_, i) => L0 + i * STEP);
+  const sig = (x) => 1 / (1 + Math.exp(-x));
+  const gau = (x, mu, s) => Math.exp(-0.5 * ((x - mu) / s) ** 2);
+  const g2 = (x, mu, s1, s2) => { const s = x < mu ? s1 : s2; return Math.exp(-0.5 * ((x - mu) / s) ** 2); };
+
+  // CIE 1931 2° observer, multi-lobe fit (Wyman, Sloan & Shirley 2013)
+  const xb = lam.map(l => 1.056 * g2(l, 599.8, 37.9, 31.0) + 0.362 * g2(l, 442.0, 16.0, 26.7) - 0.065 * g2(l, 501.1, 20.4, 26.2));
+  const yb = lam.map(l => 0.821 * g2(l, 568.8, 46.9, 40.5) + 0.286 * g2(l, 530.9, 16.3, 31.1));
+  const zb = lam.map(l => 1.217 * g2(l, 437.0, 11.8, 36.0) + 0.681 * g2(l, 459.0, 26.0, 13.8));
+  // Approximate D65 relative SPD, 400–700 nm @10 nm
+  const D65 = [82.75,91.49,93.43,86.68,104.86,117.01,117.81,114.86,115.92,108.81,109.35,107.80,104.79,107.69,104.41,104.05,100.00,96.33,95.79,88.69,90.01,89.60,87.70,83.29,83.70,80.03,80.21,82.28,78.28,69.72,71.61];
+  const wx = xb.map((v, i) => v * D65[i]), wy = yb.map((v, i) => v * D65[i]), wz = zb.map((v, i) => v * D65[i]);
+  const Ynorm = wy.reduce((a, b) => a + b, 0);
+
+  function specToLinRGB(R) {
+    let X = 0, Y = 0, Z = 0;
+    for (let i = 0; i < NB; i++) { X += R[i] * wx[i]; Y += R[i] * wy[i]; Z += R[i] * wz[i]; }
+    X /= Ynorm; Y /= Ynorm; Z /= Ynorm;
+    return [
+      3.2404542 * X - 1.5371385 * Y - 0.4985314 * Z,
+      -0.9692660 * X + 1.8760108 * Y + 0.0415560 * Z,
+      0.0556434 * X - 0.2040259 * Y + 1.0572252 * Z,
+    ];
+  }
+  // white-normalise so a perfect reflector maps to (1,1,1)
+  const W = specToLinRGB(new Array(NB).fill(1));
+
+  // --- colour math
+  const s2l = c => c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  const l2s = c => c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055;
+  function linToSrgb(lin) { return lin.map((c, k) => Math.round(255 * Math.min(1, Math.max(0, l2s(c / W[k]))))); }
+  function rgbToHex(rgb) { return '#' + rgb.map(v => v.toString(16).padStart(2, '0')).join(''); }
+  function hexToRgb(h) { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+  // --- Pigments (parametric reflectance curves, tuned to typical acrylic masstones)
+  const mk = (f) => lam.map(l => Math.min(0.95, Math.max(0.012, f(l))));
+  // shape helpers
+  const Yel = (edge, top = 0.84, w = 11, base = 0.05) => l => base + top * sig((l - edge) / w);
+  const Red = (edge, top = 0.8, w = 10, blue = 0, base = 0.04) => l => base + blue * gau(l, 425, 28) + top * sig((l - edge) / w);
+  const Blu = (pk, h, wd, tail = 0, base = 0.03, tailAt = 670) => l => base + h * gau(l, pk, wd) + tail * sig((l - tailAt) / 14);
+  const Grn = (pk, h, wd, tail = 0, base = 0.03) => l => base + h * gau(l, pk, wd) + tail * sig((l - 680) / 14);
+  const Earth = (edge, top, w, base, slope = 0) => l => base + top * sig((l - edge) / w) + slope * (l - 400) / 300;
+
+  const G = { prim: 'Primaries', yel: 'Yellows', ora: 'Oranges', red: 'Reds', pur: 'Purples & pinks', blu: 'Blues', grn: 'Greens', ear: 'Earths & browns', blk: 'Greys & blacks' };
+  // strong = high tinting strength: add in small amounts
+  const LIB = [
+    // primaries (the starter set)
+    ['white',   G.prim, 'Titanium White',        'White',        'PW6',    0, l => 0.90 + 0.03 * sig((l - 430) / 10)],
+    ['yellow',  G.prim, 'Hansa Yellow Light',    'Hansa Yellow', 'PY3',    0, Yel(505)],
+    ['magenta', G.prim, 'Quinacridone Magenta',  'Magenta',      'PR122',  1, l => 0.035 + 0.30 * gau(l, 425, 28) + 0.80 * sig((l - 612) / 16)],
+    ['cyan',    G.prim, 'Phthalo Blue (Green Shade)', 'Phthalo Blue', 'PB15:3', 1, Blu(482, 0.38, 36, 0.03, 0.03, 680)],
+    ['black',   G.prim, 'Mars Black',            'Black',        'PBk11',  1, l => 0.035 + 0.005 * (l - 400) / 300],
+    // yellows
+    ['lemon',    G.yel, 'Cadmium Yellow Lemon',  'Lemon Yellow',  'PY35',  0, Yel(500, 0.83, 9)],
+    ['cadYelL',  G.yel, 'Cadmium Yellow Light',  'Cad. Yellow Light', 'PY35', 0, Yel(515, 0.84, 10)],
+    ['yellowW',  G.yel, 'Cadmium Yellow Medium', 'Cad. Yellow',   'PY35',  0, Yel(528, 0.82, 10)],
+    ['hansaMed', G.yel, 'Hansa Yellow Medium',   'Hansa Yellow Med.', 'PY74', 0, Yel(520, 0.84, 11)],
+    ['diaryl',   G.yel, 'Diarylide Yellow',      'Diarylide Yellow', 'PY83', 0, Yel(545, 0.80, 12, 0.05)],
+    ['naples',   G.yel, 'Naples Yellow Hue',     'Naples Yellow', 'PW6 · PY42', 0, Earth(495, 0.48, 22, 0.36)],
+    // oranges
+    ['cadOr',    G.ora, 'Cadmium Orange',        'Cad. Orange',   'PO20',  0, Yel(566, 0.82, 11, 0.045)],
+    ['pyrOr',    G.ora, 'Pyrrole Orange',        'Pyrrole Orange','PO73',  0, Yel(578, 0.82, 10, 0.04)],
+    // reds
+    ['red',      G.red, 'Cadmium Red Light',     'Cad. Red Light','PR108', 0, Red(594)],
+    ['cadRedM',  G.red, 'Cadmium Red Medium',    'Cad. Red',      'PR108', 0, Red(606, 0.78, 10, 0, 0.035)],
+    ['pyrRed',   G.red, 'Pyrrole Red',           'Pyrrole Red',   'PR254', 0, Red(600, 0.80, 9, 0.02, 0.035)],
+    ['naphRed',  G.red, 'Naphthol Crimson',      'Naphthol Crimson', 'PR170', 1, Red(612, 0.76, 11, 0.06, 0.035)],
+    ['quinRed',  G.red, 'Quinacridone Red',      'Quin. Red',     'PV19',  1, Red(602, 0.80, 13, 0.16, 0.035)],
+    ['alizarin', G.red, 'Alizarin Crimson Hue',  'Alizarin Crimson', 'PR177 · PV19', 1, Red(628, 0.62, 16, 0.10, 0.03)],
+    // purples & pinks
+    ['quinViol', G.pur, 'Quinacridone Violet',   'Quin. Violet',  'PV19',  1, l => 0.035 + 0.22 * gau(l, 420, 30) + 0.62 * sig((l - 625) / 16)],
+    ['dioxazine',G.pur, 'Dioxazine Purple',      'Dioxazine Purple', 'PV23', 1, l => 0.025 + 0.13 * gau(l, 425, 32) + 0.30 * sig((l - 660) / 16)],
+    ['ultraViol',G.pur, 'Ultramarine Violet',    'Ultra. Violet', 'PV15',  0, l => 0.04 + 0.30 * gau(l, 430, 35) + 0.35 * sig((l - 640) / 18)],
+    ['opera',    G.pur, 'Brilliant Rose / Opera Pink', 'Rose Pink', 'PR122 · PW6', 0, l => 0.18 + 0.50 * gau(l, 425, 34) + 0.72 * sig((l - 590) / 18)],
+    // blues
+    ['ultra',    G.blu, 'Ultramarine Blue',      'Ultramarine',   'PB29',  0, Blu(448, 0.40, 32, 0.22, 0.03)],
+    ['cobalt',   G.blu, 'Cobalt Blue',           'Cobalt Blue',   'PB28',  0, Blu(462, 0.50, 38, 0.12, 0.04, 690)],
+    ['cerulean', G.blu, 'Cerulean Blue Hue',     'Cerulean',      'PB15 · PW6', 0, Blu(482, 0.58, 48, 0.08, 0.10, 690)],
+    ['phthaloRS',G.blu, 'Phthalo Blue (Red Shade)', 'Phthalo Blue RS', 'PB15:1', 1, Blu(465, 0.33, 34, 0.04, 0.03, 680)],
+    ['prussian', G.blu, 'Prussian Blue',         'Prussian Blue', 'PB27',  1, Blu(478, 0.14, 40, 0.02, 0.025, 690)],
+    ['manganese',G.blu, 'Manganese Blue Hue',    'Manganese Blue','PB15',  1, Blu(492, 0.48, 40, 0.03, 0.04, 690)],
+    // greens
+    ['phthaloG', G.grn, 'Phthalo Green (Blue Shade)',   'Phthalo Green', 'PG7',  1, Grn(508, 0.36, 30)],
+    ['phthaloGY',G.grn, 'Phthalo Green (Yellow Shade)', 'Phthalo Green YS', 'PG36', 1, Grn(524, 0.40, 30)],
+    ['permGreen',G.grn, 'Permanent Green Light', 'Perm. Green Light', 'PG7 · PY3', 0, Grn(540, 0.58, 38, 0.06, 0.05)],
+    ['sap',      G.grn, 'Sap Green',             'Sap Green',     'PG7 · PY110', 0, Grn(552, 0.15, 42, 0.10, 0.03)],
+    ['chromOx',  G.grn, 'Chromium Oxide Green',  'Chrom. Ox. Green', 'PG17', 0, Grn(540, 0.22, 46, 0.08, 0.06)],
+    ['hooker',   G.grn, "Hooker's Green Hue",   "Hooker's Green", 'PG7 · PY', 1, Grn(530, 0.16, 36, 0.04, 0.03)],
+    // earths
+    ['ochre',    G.ear, 'Yellow Ochre',          'Yellow Ochre',  'PY42',  0, Earth(545, 0.50, 22, 0.08)],
+    ['rawSienna',G.ear, 'Raw Sienna',            'Raw Sienna',    'PBr7',  0, Earth(565, 0.42, 24, 0.06)],
+    ['burntSien',G.ear, 'Burnt Sienna',          'Burnt Sienna',  'PR101', 0, Earth(600, 0.36, 26, 0.045)],
+    ['redOxide', G.ear, 'Red Oxide',             'Red Oxide',     'PR101', 0, Earth(608, 0.30, 20, 0.04)],
+    ['rawUmber', G.ear, 'Raw Umber',             'Raw Umber',     'PBr7',  1, Earth(560, 0.10, 40, 0.04, 0.03)],
+    ['burntUmb', G.ear, 'Burnt Umber',           'Burnt Umber',   'PBr7',  1, Earth(595, 0.13, 30, 0.035, 0.01)],
+    ['vanDyke',  G.ear, 'Van Dyke Brown Hue',    'Van Dyke Brown','PBr7 · PBk', 1, Earth(600, 0.06, 35, 0.03)],
+    // greys & blacks
+    ['ivory',    G.blk, 'Ivory Black',           'Ivory Black',   'PBk9',  1, l => 0.032 + 0.012 * (l - 400) / 300],
+    ['carbon',   G.blk, 'Carbon Black',          'Carbon Black',  'PBk7',  1, l => 0.022],
+    ['paynes',   G.blk, "Payne's Grey",          "Payne's Grey",  'PB29 · PBk', 1, l => 0.035 + 0.05 * gau(l, 460, 50)],
+    ['neutral',  G.blk, 'Neutral Grey (N5)',     'Neutral Grey',  'PW6 · PBk', 0, l => 0.20],
+  ];
+  const PIGMENTS = LIB.map(([id, group, name, short, code, strong, f]) => ({ id, group, name, short, code, strong: !!strong, core: group === G.prim, R: mk(f) }));
+  const GROUPS = Object.values(G);
+  for (const p of PIGMENTS) {
+    p.KS = p.R.map(r => (1 - r) ** 2 / (2 * r));
+    p.hex = rgbToHex(linToSrgb(specToLinRGB(p.R)));
+  }
+
+  function mixSpectrum(pigs, w) {
+    const R = new Array(NB);
+    for (let i = 0; i < NB; i++) {
+      let ks = 0;
+      for (let j = 0; j < pigs.length; j++) ks += w[j] * pigs[j].KS[i];
+      R[i] = 1 + ks - Math.sqrt(ks * ks + 2 * ks);
+    }
+    return R;
+  }
+
+  function linNormToLab(lin) { // lin already white-normalised (0..1 linear sRGB)
+    const [r, g, b] = lin;
+    const X = 0.4124564 * r + 0.3575761 * g + 0.1804375 * b;
+    const Y = 0.2126729 * r + 0.7151522 * g + 0.0721750 * b;
+    const Z = 0.0193339 * r + 0.1191920 * g + 0.9503041 * b;
+    const f = t => t > 216 / 24389 ? Math.cbrt(t) : (24389 / 27 * t + 16) / 116;
+    const fx = f(X / 0.95047), fy = f(Y), fz = f(Z / 1.08883);
+    return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
+  }
+  function rgbToLab(rgb) { return linNormToLab(rgb.map(v => s2l(v / 255))); }
+  function specToLab(R) { const lin = specToLinRGB(R); return linNormToLab(lin.map((c, k) => Math.max(0, c / W[k]))); }
+  function specToHex(R) { return rgbToHex(linToSrgb(specToLinRGB(R))); }
+
+  function dE00(a, b) {
+    const [L1, a1, b1] = a, [L2, a2, b2] = b;
+    const C1 = Math.hypot(a1, b1), C2 = Math.hypot(a2, b2), Cb = (C1 + C2) / 2;
+    const G = 0.5 * (1 - Math.sqrt(Cb ** 7 / (Cb ** 7 + 25 ** 7)));
+    const a1p = (1 + G) * a1, a2p = (1 + G) * a2;
+    const C1p = Math.hypot(a1p, b1), C2p = Math.hypot(a2p, b2);
+    const h = (x, y) => { if (x === 0 && y === 0) return 0; let d = Math.atan2(y, x) * 180 / Math.PI; return d < 0 ? d + 360 : d; };
+    const h1p = h(a1p, b1), h2p = h(a2p, b2);
+    const dLp = L2 - L1, dCp = C2p - C1p;
+    let dhp = 0;
+    if (C1p * C2p !== 0) { dhp = h2p - h1p; if (dhp > 180) dhp -= 360; else if (dhp < -180) dhp += 360; }
+    const dHp = 2 * Math.sqrt(C1p * C2p) * Math.sin(dhp * Math.PI / 360);
+    const Lbp = (L1 + L2) / 2, Cbp = (C1p + C2p) / 2;
+    let hbp = h1p + h2p;
+    if (C1p * C2p !== 0) { if (Math.abs(h1p - h2p) > 180) hbp += h1p + h2p < 360 ? 360 : -360; hbp /= 2; }
+    const T = 1 - 0.17 * Math.cos((hbp - 30) * Math.PI / 180) + 0.24 * Math.cos(2 * hbp * Math.PI / 180) + 0.32 * Math.cos((3 * hbp + 6) * Math.PI / 180) - 0.20 * Math.cos((4 * hbp - 63) * Math.PI / 180);
+    const dTh = 30 * Math.exp(-(((hbp - 275) / 25) ** 2));
+    const Rc = 2 * Math.sqrt(Cbp ** 7 / (Cbp ** 7 + 25 ** 7));
+    const Sl = 1 + 0.015 * (Lbp - 50) ** 2 / Math.sqrt(20 + (Lbp - 50) ** 2);
+    const Sc = 1 + 0.045 * Cbp, Sh = 1 + 0.015 * Cbp * T;
+    const Rt = -Math.sin(2 * dTh * Math.PI / 180) * Rc;
+    return Math.sqrt((dLp / Sl) ** 2 + (dCp / Sc) ** 2 + (dHp / Sh) ** 2 + Rt * (dCp / Sc) * (dHp / Sh));
+  }
+
+  // --- solver
+  function evalMix(pigs, w, targetLab) { return dE00(specToLab(mixSpectrum(pigs, w)), targetLab); }
+
+  function* compositions(n, k) { // positive integer compositions of n into k parts
+    if (k === 1) { yield [n]; return; }
+    for (let i = 1; i <= n - k + 1; i++) for (const rest of compositions(n - i, k - 1)) yield [i, ...rest];
+  }
+  function* subsets(arr, maxK) {
+    const n = arr.length;
+    for (let mask = 1; mask < (1 << n); mask++) {
+      const s = []; for (let i = 0; i < n; i++) if (mask & (1 << i)) s.push(arr[i]);
+      if (s.length <= maxK) yield s;
+    }
+  }
+
+  function refine(pigs, w0, targetLab) {
+    let w = w0.slice(), best = evalMix(pigs, w, targetLab);
+    let step = 1.6;
+    while (step > 1.004) {
+      let improved = false;
+      for (let j = 0; j < w.length; j++) {
+        for (const f of [step, 1 / step]) {
+          const t = w.slice(); t[j] *= f;
+          const s = t.reduce((a, b) => a + b, 0); for (let k = 0; k < t.length; k++) t[k] /= s;
+          const d = evalMix(pigs, t, targetLab);
+          if (d < best - 1e-6) { best = d; w = t; improved = true; }
+        }
+      }
+      if (!improved) step = Math.sqrt(step);
+    }
+    return { w, dE: best };
+  }
+
+  // with a big collection, keep the paints that do best alone or in pairs (plus white and black)
+  function shortlist(pool, targetLab, max) {
+    const score = new Map(pool.map(p => [p.id, evalMix([p], [1], targetLab)]));
+    for (let i = 0; i < pool.length; i++) for (let j = i + 1; j < pool.length; j++) {
+      for (let a = 1; a < 10; a++) {
+        const wa = a * a, wb = (10 - a) * (10 - a), t = wa + wb;
+        const d = evalMix([pool[i], pool[j]], [wa / t, wb / t], targetLab);
+        if (d < score.get(pool[i].id)) score.set(pool[i].id, d);
+        if (d < score.get(pool[j].id)) score.set(pool[j].id, d);
+      }
+    }
+    const keep = pool.filter(p => p.id === 'white' || p.id === 'black');
+    for (const p of pool.slice().sort((a, b) => score.get(a.id) - score.get(b.id))) {
+      if (keep.length >= max) break;
+      if (!keep.includes(p)) keep.push(p);
+    }
+    return keep;
+  }
+
+  function solve(targetRgb, enabledIds, maxPaints = 4) {
+    const targetLab = rgbToLab(targetRgb);
+    let pool = PIGMENTS.filter(p => enabledIds.includes(p.id));
+    if (pool.length > 10) pool = shortlist(pool, targetLab, 10);
+    const coarse = [];
+    const N = 10;
+    for (const s of subsets(pool, maxPaints)) {
+      let bestHere = null;
+      for (const c of compositions(Math.max(N, s.length), s.length)) {
+        // bias small amounts for strong pigments by squaring proportions
+        const raw = c.map(v => v * v); const tot = raw.reduce((a, b) => a + b, 0);
+        const w = raw.map(v => v / tot);
+        const d = evalMix(s, w, targetLab);
+        if (!bestHere || d < bestHere.dE) bestHere = { pigs: s, w, dE: d };
+      }
+      coarse.push(bestHere);
+    }
+    coarse.sort((a, b) => a.dE - b.dE);
+    const results = [];
+    for (const c of coarse.slice(0, 18)) {
+      const r = refine(c.pigs, c.w, targetLab);
+      results.push(finish(c.pigs, r.w, r.dE, targetLab));
+    }
+    results.sort((a, b) => a.dE - b.dE);
+    const best = results[0];
+    // simpler alternative: fewest paints within +2.5 ΔE of best
+    let simple = null;
+    for (const r of results) {
+      if (r.items.length < best.items.length && r.dE <= best.dE + 2.5) {
+        if (!simple || r.items.length < simple.items.length || (r.items.length === simple.items.length && r.dE < simple.dE)) simple = r;
+      }
+    }
+    return { targetLab, best, simple };
+  }
+
+  function finish(pigs, w, dE, targetLab) {
+    // drop negligible components (<0.15%) and re-evaluate
+    let items = pigs.map((p, i) => ({ p, w: w[i] })).filter(x => x.w >= 0.0015);
+    const tot = items.reduce((a, b) => a + b.w, 0); items.forEach(x => x.w /= tot);
+    const ps = items.map(x => x.p), ws = items.map(x => x.w);
+    const R = mixSpectrum(ps, ws);
+    dE = dE00(specToLab(R), targetLab);
+    items.sort((a, b) => b.w - a.w);
+    return { items, dE, hex: specToHex(R), parts: toParts(items, targetLab, dE) };
+  }
+
+  function toParts(items, targetLab, dEbest) {
+    // smallest whole-number ratio whose mix stays within 1.5 ΔE of the exact one
+    for (let T = 2; T <= 60; T++) {
+      const parts = items.map(x => Math.round(x.w * T));
+      if (parts.every(v => v === 0)) continue;
+      const use = items.map((x, i) => ({ p: x.p, n: parts[i] })).filter(x => x.n > 0);
+      const s = use.reduce((a, b) => a + b.n, 0);
+      const d = evalMix(use.map(u => u.p), use.map(u => u.n / s), targetLab);
+      if (d <= dEbest + 1.5) return { T, parts, dE: d };
+    }
+    return null;
+  }
+
+  return { PIGMENTS, GROUPS, solve, hexToRgb, rgbToHex, rgbToLab, dE00, s2l, l2s };
+})();
+
+
+</script>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const P = Engine.PIGMENTS;
+const store = { get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+                set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} } };
+
+let enabled = store.get('amf.paints', P.filter(p => p.core).map(p => p.id)).filter(id => P.some(p => p.id === id));
+if (!enabled.length) enabled = P.filter(p => p.core).map(p => p.id);
+let maxPaints = store.get('amf.max', 4);
+$('maxP').value = String(maxPaints);
+let target = [138,154,91];
+
+// ---------- paints: primaries + colour groups
+const CORE = P.filter(p => p.core).map(p => p.id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+const chev = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 6 6 6-6 6"/></svg>';
+
+function paintCard(p){
+  const el = document.createElement('label');
+  el.className = 'paint';
+  el.dataset.id = p.id;
+  el.dataset.search = (p.name + ' ' + p.short + ' ' + p.code + ' ' + p.group).toLowerCase();
+  el.innerHTML = `<input type="checkbox" id="pp-${p.id}"><span class="dab" style="background:${p.hex}"></span><span style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="cd">${esc(p.code)}${p.strong ? ' · strong' : ''}</div></span>`;
+  el.querySelector('input').addEventListener('change', e => togglePaint(p.id, e.target.checked));
+  return el;
+}
+function buildPaints(){
+  $('starter').innerHTML = '';
+  P.filter(p => p.core).forEach(p => $('starter').appendChild(paintCard(p)));
+  $('groups').innerHTML = '';
+  for (const g of Engine.GROUPS.slice(1)){
+    const ps = P.filter(p => p.group === g);
+    const d = document.createElement('details');
+    d.dataset.group = g;
+    d.innerHTML = `<summary>${chev}<span class="gname">${esc(g)}<span class="gdots">${ps.map(p => `<i style="background:${p.hex}"></i>`).join('')}</span></span><span class="count"></span></summary><div class="inner"><div class="paints"></div></div>`;
+    const box = d.querySelector('.paints');
+    ps.forEach(p => box.appendChild(paintCard(p)));
+    $('groups').appendChild(d);
+  }
+  syncPaints();
+}
+function syncPaints(){
+  document.querySelectorAll('.paint[data-id]').forEach(el => {
+    const on = enabled.includes(el.dataset.id);
+    el.querySelector('input').checked = on;
+    el.classList.toggle('off', !on);
+    el.classList.toggle('has', on && !CORE.includes(el.dataset.id));
+  });
+  document.querySelectorAll('#groups details').forEach(d => {
+    const ids = P.filter(p => p.group === d.dataset.group).map(p => p.id);
+    const n = ids.filter(id => enabled.includes(id)).length;
+    const c = d.querySelector('.count');
+    c.textContent = n ? `${n} of ${ids.length} owned` : `${ids.length} paints`;
+    c.classList.toggle('on', n > 0);
+  });
+  const extra = enabled.filter(id => !CORE.includes(id)).length;
+  const prim = enabled.filter(id => CORE.includes(id)).length;
+  $('paintCount').textContent = `${prim} of 5 primaries` + (extra ? ` and ${extra} other tube${extra > 1 ? 's' : ''} in use` : ' in use');
+}
+function togglePaint(id, on){
+  if (on){ if (!enabled.includes(id)) enabled.push(id); }
+  else enabled = enabled.filter(x => x !== id);
+  if (!enabled.length){ enabled = [id]; }
+  store.set('amf.paints', enabled); syncPaints(); run();
+}
+$('maxP').addEventListener('change', e => { maxPaints = +e.target.value; store.set('amf.max', maxPaints); run(); });
+$('resetSet').onclick = () => { enabled = CORE.slice(); store.set('amf.paints', enabled); syncPaints(); run(); note(`Back to the five primaries.`); };
+
+// search across groups: opens groups with matches, hides the rest
+$('paintSearch').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll('#groups details').forEach(d => {
+    let hits = 0;
+    d.querySelectorAll('.paint').forEach(el => { const m = !q || el.dataset.search.includes(q); el.hidden = !m; if (m) hits++; });
+    d.hidden = !!q && !hits;
+    if (q) d.open = hits > 0;
+  });
+});
+
+// ---------- save / load paint set
+function note(html, err){ const m = $('setMsg'); m.hidden = false; m.className = 'msg' + (err ? ' err' : ''); m.innerHTML = html; clearTimeout(note.t); note.t = setTimeout(() => m.hidden = true, 7000); }
+function setFile(){
+  return JSON.stringify({
+    app: 'ToneCooker', version: 1, saved: new Date().toISOString().slice(0, 10),
+    maxPaintsPerMix: maxPaints,
+    paints: P.filter(p => enabled.includes(p.id)).map(p => ({ id: p.id, name: p.name, pigment: p.code, group: p.group }))
+  }, null, 2);
+}
+let downloads = null;
+if (window.claude && window.claude.use) window.claude.use('downloads').then(d => { downloads = d; }).catch(() => {});
+$('saveSet').onclick = async () => {
+  const text = setFile();
+  if (downloads){
+    try { await downloads.save({ filename: 'my-acrylic-paints.json', data: text }); note(`Saved <b>my-acrylic-paints.json</b> with ${enabled.length} paints.`); return; }
+    catch(e){ if (e && e.code === 'declined') return; if (e && e.code === 'rate_limited'){ note('A save is already waiting for you. Finish that one first.', true); return; } }
+  }
+  $('fileText').value = text; $('fileBox').hidden = false;
+};
+$('copyText').onclick = () => {
+  const t = $('fileText');
+  const ok = () => { $('copyText').textContent = 'Copied'; setTimeout(() => $('copyText').textContent = 'Copy', 1600); };
+  try { navigator.clipboard.writeText(t.value).then(ok, () => { t.select(); }); } catch(e){ t.select(); }
+};
+$('closeBox').onclick = () => $('fileBox').hidden = true;
+
+const norm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+function findPaint(entry){
+  if (entry && typeof entry === 'object') entry = entry.id || entry.name || '';
+  const n = norm(entry); if (!n) return null;
+  return P.find(p => norm(p.id) === n) || P.find(p => norm(p.name) === n) || P.find(p => norm(p.short) === n)
+      || P.find(p => norm(p.name).includes(n) || n.includes(norm(p.name)));
+}
+$('loadSet').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  let text = '';
+  try { text = await f.text(); } catch(err){ note('That file couldn’t be read.', true); return; }
+  let list = null, max = null;
+  try { const j = JSON.parse(text); list = Array.isArray(j) ? j : j.paints; max = j.maxPaintsPerMix; } catch(err){ list = text.split(/\r?\n|,/).map(s => s.trim()).filter(Boolean); }
+  if (!Array.isArray(list) || !list.length){ note('No paints found in that file. Use a file saved from this app, or a text file with one paint name per line.', true); return; }
+  const found = [], unknown = [];
+  list.forEach(x => { const p = findPaint(x); if (p){ if (!found.includes(p.id)) found.push(p.id); } else unknown.push(typeof x === 'object' ? (x.name || x.id) : x); });
+  if (!found.length){ note('None of the paint names in that file matched paints in this app.', true); return; }
+  enabled = found; store.set('amf.paints', enabled);
+  if ([2,3,4,5].includes(max)){ maxPaints = max; $('maxP').value = String(max); store.set('amf.max', max); }
+  syncPaints(); run();
+  note(`Loaded ${found.length} paint${found.length > 1 ? 's' : ''} from <b>${esc(f.name)}</b>.` + (unknown.length ? ` Not recognised: ${unknown.slice(0, 5).map(esc).join(', ')}${unknown.length > 5 ? '…' : ''}.` : ''), false);
+});
+
+// ---------- result
+const fmtPct = w => { const v = w*100; return v < 1 ? v.toFixed(1)+'%' : v < 10 ? v.toFixed(1)+'%' : Math.round(v)+'%'; };
+const short = p => p.short;
+function verdict(d){
+  if (d < 2) return ['good','Near-perfect match'];
+  if (d < 5) return ['good','Very close'];
+  if (d < 9) return ['warn','Close, slightly off'];
+  return ['bad','Out of reach — closest possible'];
+}
+function partsLine(r){
+  if (!r.parts) return '';
+  const bits = [], touches = [];
+  r.items.forEach((x,i) => { const n = r.parts.parts[i]; if (n > 0) bits.push(`${n} ${short(x.p)}`); else touches.push(short(x.p)); });
+  return bits.join(' : ') + (touches.length ? ` + a touch of ${touches.join(' and ')}` : '');
+}
+function recipeHTML(r){
+  return r.items.map((x,i) => {
+    const n = r.parts ? r.parts.parts[i] : null;
+    const pt = n == null ? '' : n === 0 ? 'touch' : `${n} part${n>1?'s':''}`;
+    return `<div class="ri"><span class="dab" style="background:${x.p.hex}"></span><div><div class="nm">${x.p.name}${x.p.strong?'<span class="strong">strong</span>':''}</div><div class="cd">${x.p.code}</div></div><div class="pc">${fmtPct(x.w)}</div><div class="pt">${pt}</div></div>`;
+  }).join('');
+}
+function steps(r){
+  const items = r.items.slice();
+  // base = the largest weak paint; then other weak paints; strong paints last, smallest first
+  const weak = items.filter(x => !x.p.strong).sort((a,b) => b.w - a.w);
+  const strong = items.filter(x => x.p.strong).sort((a,b) => b.w - a.w);
+  const out = [];
+  const order = weak.length ? weak : [strong.shift()];
+  order.forEach((x,i) => out.push(i === 0
+    ? `Put down the <b>${x.p.name}</b> first (${fmtPct(x.w)} of the mix). It's your base.`
+    : `Mix in the <b>${x.p.name}</b> (${fmtPct(x.w)}).`));
+  strong.forEach(x => out.push(x.w < 0.04
+    ? `Add <b>${x.p.name}</b> with the tip of the knife, a speck at a time (${fmtPct(x.w)}). It's very strong.`
+    : `Add <b>${x.p.name}</b> gradually (${fmtPct(x.w)}). Stop and compare as you go.`));
+  out.push('Let a dab dry next to your target. Acrylics usually dry a little darker.');
+  return out.map(s => `<li>${s}</li>`).join('');
+}
+
+let runTimer = 0;
+function run(){
+  clearTimeout(runTimer);
+  runTimer = setTimeout(() => {
+    const hex = Engine.rgbToHex(target).toUpperCase();
+    const res = Engine.solve(target, enabled, maxPaints);
+    const b = res.best;
+    $('swT').style.background = hex; $('hexT').textContent = hex;
+    $('swM').style.background = b.hex; $('hexM').textContent = b.hex.toUpperCase();
+    const [cls, txt] = verdict(b.dE);
+    $('pill').className = 'pill ' + cls; $('pill').textContent = txt;
+    $('deTxt').textContent = `ΔE2000 ${b.dE.toFixed(1)}`;
+    $('strip').innerHTML = b.items.map(x => `<span style="background:${x.p.hex};flex-grow:${x.w}" title="${x.p.name} ${fmtPct(x.w)}"></span>`).join('');
+    $('recipe').innerHTML = recipeHTML(b);
+    const pl = partsLine(b);
+    $('ratio').innerHTML = pl ? `${pl}<small>Whole-number ratio. Use the same scoop or knife-load for each part.</small>` : `<small>The amounts are too uneven for a simple ratio. Start from the base and add the others by weight or in tiny dabs.</small>`;
+    $('steps').innerHTML = steps(b);
+    $('dT').style.background = hex; $('dM').style.background = b.hex;
+    $('dV').textContent = `${txt} · ΔE ${b.dE.toFixed(1)}`;
+    $('dR').textContent = pl || b.items.map(x => `${short(x.p)} ${fmtPct(x.w)}`).join(' · ');
+
+    // gamut + "more paints" suggestion
+    let gm = '', sugg = [];
+    if (b.dE >= 5){
+      const all = P.map(p => p.id);
+      const missing = all.filter(id => !enabled.includes(id));
+      if (missing.length){
+        const better = Engine.solve(target, all, Math.max(maxPaints, 4)).best;
+        const addP = better.items.filter(x => missing.includes(x.p.id)).map(x => x.p);
+        if (better.dE < b.dE - 2 && addP.length){
+          gm = `With <b>${addP.map(p => esc(p.name)).join('</b> and <b>')}</b> this gets to ΔE ${better.dE.toFixed(1)}. <button class="btn small" id="useSugg" style="margin-top:8px">I have ${addP.length > 1 ? 'these' : 'it'}, use ${addP.length > 1 ? 'them' : 'it'}</button>`;
+          sugg = addP.map(p => p.id);
+        }
+      }
+      if (!gm && b.dE >= 9) gm = 'This colour is brighter or purer than these paints can make together. The recipe is the closest you can get. A ready-made tube in this colour is the only way to hit it exactly.';
+      if (!gm && maxPaints < 4) gm = 'Allowing more paints in one mix may get closer.';
+    }
+    $('gamutMsg').hidden = !gm; $('gamutMsg').innerHTML = gm;
+    if ($('useSugg')) $('useSugg').onclick = () => { sugg.forEach(id => { if (!enabled.includes(id)) enabled.push(id); }); store.set('amf.paints', enabled); syncPaints(); run(); };
+
+    const s = res.simple;
+    if (s){
+      $('alt').hidden = false;
+      $('alt').innerHTML = `<div class="head"><h3 style="font-size:16px">Simpler: ${s.items.length} paint${s.items.length>1?'s':''}</h3><span class="de"><span class="miniswatch" style="background:${s.hex}"></span> ΔE ${s.dE.toFixed(1)}</span></div><div class="strip">${s.items.map(x => `<span style="background:${x.p.hex};flex-grow:${x.w}"></span>`).join('')}</div><div class="recipe">${recipeHTML(s)}</div>${partsLine(s)?`<div class="ratio" style="font-size:17px">${partsLine(s)}</div>`:''}`;
+    } else $('alt').hidden = true;
+    pushRecent(hex);
+  }, 60);
+}
+
+// ---------- manual input
+const EX = [['#8A9A5B','Sage'],['#C0392B','Brick red'],['#E8A33D','Ochre'],['#2E5E8C','Denim'],['#6B4E9B','Violet'],['#D8B4A0','Skin tone'],['#5B3A29','Chocolate'],['#87CEEB','Sky'],['#2F4F3E','Forest'],['#9FA4A9','Cool grey']];
+function chip(hex, title, onClick){ const b = document.createElement('button'); b.className = 'chip'; b.style.background = hex; b.title = title; b.setAttribute('aria-label', title + ' ' + hex); b.onclick = onClick; return b; }
+EX.forEach(([h,n]) => $('examples').appendChild(chip(h, n, () => setTarget(Engine.hexToRgb(h)))));
+let recent = store.get('amf.recent', []);
+function pushRecent(hex){ recent = [hex, ...recent.filter(h => h !== hex)].slice(0, 10); store.set('amf.recent', recent); }
+
+function parseColour(s){
+  s = s.trim();
+  let m = s.match(/^#?([0-9a-f]{6}|[0-9a-f]{3})$/i); if (m) return Engine.hexToRgb(m[1]);
+  m = s.match(/^(?:rgb\s*\()?\s*(\d{1,3})\s*[, ]\s*(\d{1,3})\s*[, ]\s*(\d{1,3})\s*\)?$/i);
+  if (m){ const v = m.slice(1,4).map(Number); if (v.every(x => x <= 255)) return v; }
+  return null;
+}
+function setTarget(rgb, from){
+  target = rgb.map(v => Math.round(v));
+  const hex = Engine.rgbToHex(target).toUpperCase();
+  if (from !== 'picker') $('colorIn').value = hex.toLowerCase();
+  if (from !== 'hex') $('hexIn').value = hex;
+  $('hexHint').textContent = 'Type a hex code like #4A7C59 or an RGB value like 74, 124, 89.';
+  $('hexHint').style.color = '';
+  run();
+}
+$('colorIn').addEventListener('input', e => setTarget(Engine.hexToRgb(e.target.value), 'picker'));
+function hexSubmit(){ const c = parseColour($('hexIn').value); if (c) setTarget(c); else { $('hexHint').textContent = 'That isn’t a colour code. Use #RRGGBB (like #4A7C59) or three numbers 0–255.'; $('hexHint').style.color = 'var(--bad)'; } }
+$('hexGo').onclick = hexSubmit;
+$('hexIn').addEventListener('keydown', e => { if (e.key === 'Enter') hexSubmit(); });
+
+// ---------- tabs
+let tab = 'code';
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+function showTab(t){
+  tab = t;
+  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+  $('pane-code').hidden = t !== 'code';
+  $('pane-src').hidden = t === 'code';
+  ['photo','camera','link'].forEach(k => $('src-'+k).hidden = k !== t);
+  if (t !== 'code') requestAnimationFrame(placeMarkers);
+}
+
+// ---------- image handling
+const cv = $('cv'), ctx = cv.getContext('2d', { willReadFrequently: true });
+let img = null, pick = null, wbRef = null, wbMode = false;   // pick/wbRef in canvas pixel coords
+const MAXDIM = 1400;
+
+function loadBitmapToCanvas(source, name){
+  const w0 = source.naturalWidth || source.width, h0 = source.naturalHeight || source.height;
+  const k = Math.min(1, MAXDIM / Math.max(w0, h0));
+  cv.width = Math.round(w0 * k); cv.height = Math.round(h0 * k);
+  ctx.drawImage(source, 0, 0, cv.width, cv.height);
+  img = true; pick = null; wbRef = null; wbMode = false; updWbBtn();
+  $('imgName').textContent = name || 'Photo';
+  $('mk').hidden = true; $('mkwb').hidden = true;
+  $('stageHint').textContent = 'Click or tap the photo to pick a colour. Drag to fine-tune.';
+  dominant();
+}
+function loadFile(file){
+  if (!file || !file.type.startsWith('image/')) return;
+  const url = URL.createObjectURL(file);
+  const im = new Image();
+  im.onload = () => { loadBitmapToCanvas(im, file.name && file.name !== 'image.png' ? file.name : 'Pasted image'); URL.revokeObjectURL(url); };
+  im.onerror = () => { $('stageHint').textContent = 'That file couldn’t be opened as an image. Try a JPG or PNG.'; };
+  im.src = url;
+}
+$('fileIn').addEventListener('change', e => { loadFile(e.target.files[0]); e.target.value = ''; });
+$('camIn').addEventListener('change', e => { loadFile(e.target.files[0]); e.target.value = ''; });
+
+// drag & drop + paste
+const dropZone = $('pane-src');
+['dragenter','dragover'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); $('src-photo').classList.add('over'); }));
+['dragleave','drop'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); $('src-photo').classList.remove('over'); }));
+dropZone.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) loadFile(f); });
+document.addEventListener('paste', e => {
+  const items = [...(e.clipboardData?.items || [])];
+  const imgItem = items.find(i => i.type.startsWith('image/'));
+  if (imgItem){ e.preventDefault(); if (tab === 'code' || tab === 'camera') showTab('photo'); loadFile(imgItem.getAsFile()); return; }
+  const text = e.clipboardData?.getData('text') || '';
+  if (document.activeElement && /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
+  const c = parseColour(text); if (c){ showTab('code'); setTarget(c); return; }
+  if (/^https?:\/\//i.test(text.trim())){ showTab('link'); $('urlIn').value = text.trim(); loadUrl(); }
+});
+
+// link
+function loadUrl(){
+  const u = $('urlIn').value.trim();
+  const msg = $('urlMsg');
+  if (!/^https?:\/\//i.test(u)){ msg.hidden = false; msg.className = 'msg err'; msg.textContent = 'Paste a full link that starts with https://'; return; }
+  msg.hidden = false; msg.className = 'msg'; msg.textContent = 'Loading…';
+  const im = new Image(); im.crossOrigin = 'anonymous';
+  let done = false;
+  const fail = () => { if (done) return; done = true; msg.className = 'msg err';
+    msg.innerHTML = 'This image can’t be opened from a link here. Open the link in your browser, right-click or long-press the picture, choose <b>Copy image</b>, then come back and press Ctrl+V / ⌘V.'; };
+  im.onload = () => { if (done) return; done = true;
+    try { loadBitmapToCanvas(im, u.split('/').pop().split('?')[0] || 'Linked image'); ctx.getImageData(0,0,1,1); msg.hidden = true; }
+    catch(e){ fail(); } };
+  im.onerror = fail;
+  setTimeout(fail, 8000);
+  im.src = u;
+}
+$('urlGo').onclick = loadUrl;
+$('urlIn').addEventListener('keydown', e => { if (e.key === 'Enter') loadUrl(); });
+
+// sampling
+const lin = v => Engine.s2l(v/255), unlin = c => Math.round(255*Math.min(1,Math.max(0,Engine.l2s(c))));
+function avgAt(x, y){
+  const r = +$('radius').value;
+  const x0 = Math.max(0, Math.round(x - r)), y0 = Math.max(0, Math.round(y - r));
+  const x1 = Math.min(cv.width - 1, Math.round(x + r)), y1 = Math.min(cv.height - 1, Math.round(y + r));
+  const d = ctx.getImageData(x0, y0, x1 - x0 + 1, y1 - y0 + 1).data;
+  let s = [0,0,0], n = 0;
+  for (let j = y0; j <= y1; j++) for (let i = x0; i <= x1; i++){
+    if ((i-x)**2 + (j-y)**2 > r*r + 0.5) continue;
+    const o = ((j - y0) * (x1 - x0 + 1) + (i - x0)) * 4;
+    s[0] += lin(d[o]); s[1] += lin(d[o+1]); s[2] += lin(d[o+2]); n++;
+  }
+  return s.map(v => v / Math.max(1, n));   // linear
+}
+function applyWb(linRgb){
+  if (!wbRef) return linRgb.map(unlin);
+  const m = (wbRef[0] + wbRef[1] + wbRef[2]) / 3;
+  return linRgb.map((c, k) => unlin(c * m / Math.max(1e-4, wbRef[k])));
+}
+function placeMarkers(){
+  const rect = cv.getBoundingClientRect(); if (!rect.width) return;
+  const sc = rect.width / cv.width;
+  const place = (el, p) => { if (!p){ el.hidden = true; return; } el.hidden = false;
+    const size = Math.max(14, (2 * +$('radius').value + 1) * sc + 6);
+    el.style.left = p[0] * sc + 'px'; el.style.top = p[1] * sc + 'px'; el.style.width = el.style.height = size + 'px'; };
+  place($('mk'), pick); place($('mkwb'), wbRef ? wbRef.pt : null);
+}
+window.addEventListener('resize', placeMarkers);
+$('radius').addEventListener('input', () => { placeMarkers(); if (pick) samplePick(); });
+
+function evToPx(e){
+  const r = cv.getBoundingClientRect();
+  return [Math.max(0, Math.min(cv.width - 1, (e.clientX - r.left) * cv.width / r.width)),
+          Math.max(0, Math.min(cv.height - 1, (e.clientY - r.top) * cv.height / r.height))];
+}
+function samplePick(){ setTarget(applyWb(avgAt(pick[0], pick[1]))); }
+let dragging = false;
+cv.addEventListener('pointerdown', e => {
+  if (!img) return;
+  const p = evToPx(e);
+  if (wbMode){
+    const a = avgAt(p[0], p[1]); wbRef = [...a]; wbRef.pt = p; wbMode = false; updWbBtn();
+    $('stageHint').textContent = 'White balance set. Colours from this photo are now corrected for the lighting.';
+    placeMarkers(); dominant(); if (pick) samplePick(); return;
+  }
+  dragging = true; cv.setPointerCapture(e.pointerId);
+  pick = p; placeMarkers(); samplePick();
+});
+cv.addEventListener('pointermove', e => { if (!dragging) return; pick = evToPx(e); placeMarkers(); samplePick(); });
+cv.addEventListener('pointerup', () => dragging = false);
+cv.addEventListener('pointercancel', () => dragging = false);
+function updWbBtn(){
+  const b = $('wbBtn');
+  b.classList.toggle('on', wbMode || !!wbRef);
+  b.textContent = wbMode ? 'Tap white or grey…' : wbRef ? 'White balance on ✕' : 'White balance';
+}
+$('wbBtn').onclick = () => {
+  if (wbRef){ wbRef = null; wbMode = false; updWbBtn(); placeMarkers(); dominant(); if (pick) samplePick();
+    $('stageHint').textContent = 'White balance removed.'; return; }
+  wbMode = !wbMode; updWbBtn();
+  $('stageHint').textContent = wbMode ? 'Now tap something that should be white or neutral grey, such as paper or a wall.' : 'Click or tap the photo to pick a colour. Drag to fine-tune.';
+};
+
+// dominant colours (k-means on a small copy, in linear RGB)
+function dominant(){
+  if (!img) return;
+  const S = 72, k = Math.min(1, S / Math.max(cv.width, cv.height));
+  const c2 = document.createElement('canvas'); c2.width = Math.max(1, Math.round(cv.width*k)); c2.height = Math.max(1, Math.round(cv.height*k));
+  const x2 = c2.getContext('2d'); x2.drawImage(cv, 0, 0, c2.width, c2.height);
+  const d = x2.getImageData(0, 0, c2.width, c2.height).data;
+  const pts = []; for (let i = 0; i < d.length; i += 4) if (d[i+3] > 200) pts.push([lin(d[i]), lin(d[i+1]), lin(d[i+2])]);
+  if (!pts.length) return;
+  const K = 7; let cen = [];
+  for (let i = 0; i < K; i++) cen.push(pts[Math.floor((i + 0.5) * pts.length / K)].slice());
+  let asg = new Array(pts.length).fill(0);
+  for (let it = 0; it < 12; it++){
+    const sum = cen.map(() => [0,0,0,0]);
+    pts.forEach((p, i) => { let best = 0, bd = 1e9; cen.forEach((c, j) => { const dd = (p[0]-c[0])**2+(p[1]-c[1])**2+(p[2]-c[2])**2; if (dd < bd){ bd = dd; best = j; } }); asg[i] = best; const s = sum[best]; s[0]+=p[0]; s[1]+=p[1]; s[2]+=p[2]; s[3]++; });
+    cen = sum.map((s, j) => s[3] ? [s[0]/s[3], s[1]/s[3], s[2]/s[3], s[3]] : [...cen[j].slice(0,3), 0]);
+  }
+  cen = cen.filter(c => c[3] > pts.length * 0.02).sort((a, b) => b[3] - a[3]);
+  $('domi').innerHTML = '';
+  cen.forEach(c => { const rgb = applyWb(c.slice(0,3)); const hex = Engine.rgbToHex(rgb).toUpperCase();
+    $('domi').appendChild(chip(hex, `${Math.round(100*c[3]/pts.length)}% of photo`, () => { pick = null; placeMarkers(); setTarget(rgb); })); });
+}
+
+// sample board so the photo view isn't empty
+function sampleBoard(){
+  const c = document.createElement('canvas'); c.width = 900; c.height = 560; const g = c.getContext('2d');
+  const grd = g.createLinearGradient(0, 0, 0, 560); grd.addColorStop(0, '#d9dee4'); grd.addColorStop(1, '#b9c0c8'); g.fillStyle = grd; g.fillRect(0, 0, 900, 560);
+  const sw = ['#8A9A5B','#C0392B','#E8A33D','#2E5E8C','#6B4E9B','#D8B4A0','#5B3A29','#87CEEB','#2F4F3E','#F2EDE4','#E26D5A','#3E8E7E'];
+  sw.forEach((h, i) => { const col = i % 4, row = Math.floor(i / 4); const x = 40 + col * 210, y = 36 + row * 170;
+    g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(x + 4, y + 6, 190, 140);
+    g.fillStyle = h; g.fillRect(x, y, 190, 140);
+    const sh = g.createLinearGradient(x, y, x + 190, y + 140); sh.addColorStop(0, 'rgba(255,255,255,.10)'); sh.addColorStop(1, 'rgba(0,0,0,.10)'); g.fillStyle = sh; g.fillRect(x, y, 190, 140); });
+  loadBitmapToCanvas(c, 'Sample board — example');
+}
+
+// bottom dock: shows the current match whenever the recipe swatches are scrolled out of view
+(() => {
+  const dock = $('dock');
+  const show = on => { dock.classList.toggle('show', on); dock.inert = !on; };
+  $('dGo').onclick = () => {
+    const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    $('recipeCard').scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+  };
+  if ('IntersectionObserver' in window){
+    new IntersectionObserver(es => es.forEach(e => show(!e.isIntersecting)), { threshold: 0 }).observe($('compare'));
+  }
+})();
+
+buildPaints();
+sampleBoard();
+setTarget(target);
+})();
+</script>
+
+</body></html>

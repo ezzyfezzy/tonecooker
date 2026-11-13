@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ToneCooker</title>
+<meta name="description" content="Pick any colour and get an acrylic paint-mixing recipe from the five primaries, plus any other tubes you own.">
+<meta name="theme-color" content="#eceff2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111419" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ToneCooker">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="dots" aria-hidden="true"><span style="background:#fde800"></span><span style="background:#c42981"></span><span style="background:#0a7fa8"></span></div>
+      <div>
+        <h1>ToneCooker</h1>
+        <p class="sub">Pick any colour and get a recipe from the five primaries, plus any other tubes you own.</p>
+      </div>
+    </div>
+  </header>
+
+    <!-- INPUT -->
+    <section class="panel" aria-label="Choose a colour">
+      <div class="sect-head"><h2 style="font-size:20px">Choose a colour</h2><span class="hint">Type it, or pick it from a picture</span></div>
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tab-code" aria-selected="true" data-tab="code"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18"/></svg><span class="t">Colour</span></button>
+        <button role="tab" id="tab-photo" aria-selected="false" data-tab="photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg><span class="t">Photo</span></button>
+        <button role="tab" id="tab-camera" aria-selected="false" data-tab="camera"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span class="t">Camera</span></button>
+        <button role="tab" id="tab-link" aria-selected="false" data-tab="link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg><span class="t">Link</span></button>
+      </div>
+
+      <!-- manual -->
+      <div id="pane-code" role="tabpanel" aria-labelledby="tab-code">
+        <div class="picker">
+          <label class="well" title="Open colour picker"><input type="color" id="colorIn" value="#8a9a5b" aria-label="Colour picker"></label>
+          <div class="fields">
+            <label class="label" for="hexIn">Hex or RGB</label>
+            <div class="hexrow"><input type="text" id="hexIn" value="#8A9A5B" spellcheck="false" autocomplete="off" placeholder="#8A9A5B or 138,154,91"><button class="btn" id="hexGo">Match</button></div>
+            <p class="hint" id="hexHint">Type a hex code like #4A7C59 or an RGB value like 74, 124, 89.</p>
+          </div>
+        </div>
+        <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
+          <span class="label">Try one</span>
+          <div class="chips" id="examples"></div>
+        </div>
+      </div>
+
+      <!-- shared image section (photo / camera / link) -->
+      <div id="pane-src" hidden>
+        <div id="src-photo" class="drop" data-src>
+          <p class="hint" style="flex:1;min-width:180px">Drop a photo here, paste one with Ctrl+V / ⌘V, or choose a file.</p>
+          <label class="btn primary"><input type="file" id="fileIn" accept="image/*" hidden>Choose photo</label>
+        </div>
+        <div id="src-camera" class="drop" data-src hidden>
+          <p class="hint" style="flex:1;min-width:180px">On a phone this opens the camera. Shoot in daylight, close to the colour, without flash.</p>
+          <label class="btn primary"><input type="file" id="camIn" accept="image/*" capture="environment" hidden>Take photo</label>
+        </div>
+        <div id="src-link" data-src hidden style="display:flex;flex-direction:column;gap:8px">
+          <div class="hexrow"><input type="url" id="urlIn" placeholder="https://… link to an image" autocomplete="off"><button class="btn primary" id="urlGo">Load</button></div>
+          <p class="msg" id="urlMsg" hidden></p>
+          <p class="hint">Some sites don't allow their images to be opened here. If a link won't load, right-click or long-press the picture, choose <b>Copy image</b>, and paste it here.</p>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
+          <div class="tools">
+            <span class="badge" id="imgName">Sample board</span>
+            <div class="row">
+              <label class="range" for="radius">Sample size <input type="range" id="radius" min="0" max="20" value="4"></label>
+              <button class="btn small" id="wbBtn" title="Tap something white or neutral grey in the photo to correct the lighting">White balance</button>
+            </div>
+          </div>
+          <div class="stage" id="stage"><canvas id="cv" aria-label="Photo. Click or tap to pick a colour."></canvas><div class="marker" id="mk" hidden></div><div class="marker wb" id="mkwb" hidden></div></div>
+          <p class="hint" id="stageHint">Click or tap the photo to pick a colour. Drag to fine-tune.</p>
+          <div class="domi" style="display:flex;flex-direction:column;gap:6px">
+            <span class="label">Main colours in this photo</span>
+            <div class="chips" id="domi"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESULT -->
+    <section class="panel" id="recipeCard" aria-live="polite" aria-label="Recipe">
+      <div class="sect-head"><h2 style="font-size:20px">Recipe</h2><div class="verdict"><span class="pill" id="pill"></span><span class="de" id="deTxt"></span></div></div>
+      <div class="compare" id="compare">
+        <div class="sw" id="swT"><span class="cap"><b>Your colour</b><span id="hexT"></span></span></div>
+        <div class="sw" id="swM"><span class="cap"><b>Mix</b><span id="hexM"></span></span></div>
+      </div>
+      <p class="msg" id="gamutMsg" hidden></p>
+
+      <div class="ratiobox"><span class="label">Mix in this ratio</span><div class="ratio" id="ratio"></div></div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="sect-head"><h3 style="font-size:16px">Amounts</h3><span class="label">by volume</span></div>
+        <div class="strip" id="strip"></div>
+        <div class="recipe" id="recipe"></div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h3 style="font-size:16px">How to mix it</h3>
+        <ol class="steps" id="steps"></ol>
+      </div>
+
+      <div class="alt" id="alt" hidden></div>
+    </section>
+
+  <!-- PAINTS -->
+  <section class="panel" aria-label="Your paints">
+    <div class="sect-head">
+      <div>
+        <h2 style="font-size:20px">Your paints</h2>
+        <p class="hint" id="paintCount" style="margin-top:2px"></p>
+      </div>
+      <div class="row">
+        <button class="btn small" id="saveSet">Save my paints</button>
+        <label class="btn small"><input type="file" id="loadSet" accept=".json,.txt,application/json,text/plain" hidden>Load paints file</label>
+        <button class="btn small" id="resetSet">Primaries only</button>
+      </div>
+    </div>
+    <p class="msg" id="setMsg" hidden></p>
+    <div class="filebox" id="fileBox" hidden>
+      <p class="hint">Saving files isn't available in this view. Copy this text into a file named <b>my-acrylic-paints.json</b> to keep it.</p>
+      <textarea id="fileText" readonly aria-label="Paint set as text"></textarea>
+      <div class="row"><button class="btn small" id="copyText">Copy</button><button class="btn small" id="closeBox">Close</button></div>
+    </div>
+
+    <div class="sub-head">
+      <h3>Primaries</h3>
+      <span class="hint">The five you mix everything from</span>
+    </div>
+    <div class="starter" id="starter"></div>
+
+    <div class="sub-head">
+      <h3>Other tubes you own</h3>
+      <div class="row" style="flex:1;justify-content:flex-end">
+        <div class="search"><input type="text" id="paintSearch" placeholder="Find a paint, e.g. sienna or PB29" autocomplete="off" aria-label="Find a paint"></div>
+        <label class="range" for="maxP">Max per mix
+          <select id="maxP" style="border:1px solid var(--line);background:var(--bg);border-radius:7px;padding:4px 8px">
+            <option value="2">2</option><option value="3">3</option><option value="4" selected>4</option><option value="5">5</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <p class="hint">Open a colour group and tick the tubes you have. Recipes will use them when they get closer to your colour.</p>
+    <div class="groups" id="groups"></div>
+    <p class="foot">How it works: each paint is modelled by how much light it reflects across the spectrum, and mixtures are calculated with the Kubelka–Munk model that paint chemists use. Match quality is ΔE2000: under 2 is hard to tell apart, under 5 is close. Real paints differ by brand and screens differ from paper, so mix a little first, compare it dry next to your target, and adjust.</p>
+  </section>
+</div>
+
+<div class="dock" id="dock" inert>
+  <div class="dock-in">
+    <span class="dsw" aria-hidden="true"><i id="dT"></i><i id="dM"></i></span>
+    <span class="dtx"><b id="dV"></b><span id="dR"></span></span>
+    <button class="btn small primary" id="dGo">See recipe</button>
+  </div>
+</div>
+
+<script type="module" src="/src/app.js"></script>
+</body>
+</html>
