@@ -85,3 +85,7 @@ whole-number ratio you can actually measure out.
 Real paints vary by brand, and screens render colour differently from
 paper — treat the recipe as a strong starting point, mix a small test
 batch, let it dry, and adjust.
+
+## License
+
+[MIT](LICENSE)

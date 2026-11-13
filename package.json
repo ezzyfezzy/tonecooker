@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "license": "MIT",
   "description": "Pick any colour and get an acrylic paint-mixing recipe from the five primaries, plus any other tubes you own.",
   "scripts": {
     "dev": "vite",
