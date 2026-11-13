@@ -11,7 +11,10 @@ export default defineConfig(({ mode }) => {
     allowedHosts,
   };
 
+  const base = env.BASE_PATH || '/';
+
   return {
+    base,
     server: serverOptions,
     preview: serverOptions,
     plugins: [
@@ -25,8 +28,8 @@ export default defineConfig(({ mode }) => {
           theme_color: '#111419',
           background_color: '#111419',
           display: 'standalone',
-          start_url: '/',
-          scope: '/',
+          start_url: base,
+          scope: base,
           icons: [
             { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
             { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
